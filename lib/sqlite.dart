@@ -50,14 +50,15 @@ class DBHelper {
   }
 
   ///목록 가져오기
-  Future<List<Map<String, dynamic>>> getSearches() async {
+  Future<List<String>> getSearches() async {
     final db = await database;
-    return await db.rawQuery('''
-      SELECT *, 
-      ABS((strftime('%H:%M', 'now') - strftime('%H:%M', searchTime))) as time_diff 
+    final result = await db.rawQuery('''
+      SELECT subwayName 
       FROM searches 
-      ORDER BY time_diff ASC
+      ORDER BY ABS((strftime('%H', 'now') * 60 + strftime('%M', 'now')) - (strftime('%H', searchTime) * 60 + strftime('%M', searchTime))) ASC
     ''');
+
+    return result.map((row) => row['subwayName'] as String).toList();
   }
 
   ///가장 최신꺼 역 이름만 가져오기

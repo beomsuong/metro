@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:metro/sqlite.dart';
 import 'controller.dart';
-import 'model.dart';
+import 'sqlite.dart';
 
 class View1 extends ConsumerStatefulWidget {
   const View1({super.key});
@@ -13,16 +12,22 @@ class View1 extends ConsumerStatefulWidget {
 
 class _View1State extends ConsumerState<View1> {
   final DBHelper dbHelper = DBHelper();
-
+  var test;
+  String searchText = '';
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       var data = await dbHelper.getClosestSearch();
-      print(data);
       ref
           .read(realtimeArrivalProvider.notifier)
           .fetchRealtimeArrival(data.toString());
+
+      ref.read(realtimeArrivalProvider.notifier).timeStartStop(data.toString());
+      test = await dbHelper.getSearches();
+      print(data);
+
+      setState(() {});
     });
   }
 
@@ -39,11 +44,13 @@ class _View1State extends ConsumerState<View1> {
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
+            Text(test.toString() ?? '123'),
             TextField(
               decoration: const InputDecoration(
                 hintText: '지하철명',
               ),
               onSubmitted: (value) async {
+                searchText = value;
                 ref
                     .read(realtimeArrivalProvider.notifier)
                     .fetchRealtimeArrival(value);
@@ -51,6 +58,14 @@ class _View1State extends ConsumerState<View1> {
               },
             ),
             const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () {
+                ref
+                    .read(realtimeArrivalProvider.notifier)
+                    .timeStartStop(searchText);
+              },
+              child: const Icon(Icons.timer_rounded),
+            ),
             const SizedBox(height: 30),
             realtimeArrivalAsyncValue.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -60,9 +75,15 @@ class _View1State extends ConsumerState<View1> {
                   itemCount: realtimeArrival.realtimeArrivalList?.length ?? 0,
                   itemBuilder: (context, index) {
                     final item = realtimeArrival.realtimeArrivalList![index];
-                    return ListTile(
-                      title: Text(item.trainLineNm.toString()),
-                      subtitle: Text(item.arvlMsg2.toString()),
+                    return GestureDetector(
+                      onTap: () {
+                        ///해당 차량 클릭 시 강조!
+                        print(item.toJson().toString());
+                      },
+                      child: ListTile(
+                        title: Text(item.trainLineNm.toString()),
+                        subtitle: Text(item.arvlMsg2.toString()),
+                      ),
                     );
                   },
                 ),

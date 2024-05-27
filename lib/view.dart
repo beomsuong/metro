@@ -12,28 +12,27 @@ class View1 extends ConsumerStatefulWidget {
 
 class _View1State extends ConsumerState<View1> {
   final DBHelper dbHelper = DBHelper();
-  var test;
+  List<String>? searches;
   String searchText = '';
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       var data = await dbHelper.getClosestSearch();
-      ref
-          .read(realtimeArrivalProvider.notifier)
-          .fetchRealtimeArrival(data.toString());
-
-      ref.read(realtimeArrivalProvider.notifier).timeStartStop(data.toString());
-      test = await dbHelper.getSearches();
-      print(data);
-
+      if (data != null) {
+        ref.read(realtimeArrivalNotifierProvider.notifier).fetchData(data);
+        ref.read(realtimeArrivalNotifierProvider.notifier).timeStartStop(data);
+      }
+      searches = await dbHelper.getSearches();
       setState(() {});
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final realtimeArrivalAsyncValue = ref.watch(realtimeArrivalProvider);
+    final realtimeArrivalAsyncValue =
+        ref.watch(realtimeArrivalNotifierProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -44,7 +43,7 @@ class _View1State extends ConsumerState<View1> {
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
-            Text(test.toString() ?? '123'),
+            Text(searches?.join(', ') ?? 'Loading...'),
             TextField(
               decoration: const InputDecoration(
                 hintText: '지하철명',
@@ -52,26 +51,28 @@ class _View1State extends ConsumerState<View1> {
               onSubmitted: (value) async {
                 searchText = value;
                 ref
-                    .read(realtimeArrivalProvider.notifier)
-                    .fetchRealtimeArrival(value);
+                    .read(realtimeArrivalNotifierProvider.notifier)
+                    .fetchData(value);
                 await dbHelper.insertSearch(value);
+                searches = await dbHelper.getSearches();
+                setState(() {});
               },
             ),
             const SizedBox(height: 30),
             ElevatedButton(
               onPressed: () {
                 ref
-                    .read(realtimeArrivalProvider.notifier)
+                    .read(realtimeArrivalNotifierProvider.notifier)
                     .timeStartStop(searchText);
               },
               child: const Icon(Icons.timer_rounded),
             ),
             const SizedBox(height: 30),
-            realtimeArrivalAsyncValue.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(child: Text('Error: $err')),
-              data: (realtimeArrival) => Expanded(
-                child: ListView.builder(
+            Expanded(
+              child: realtimeArrivalAsyncValue.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, stack) => Center(child: Text('Error: $err')),
+                data: (realtimeArrival) => ListView.builder(
                   itemCount: realtimeArrival.realtimeArrivalList?.length ?? 0,
                   itemBuilder: (context, index) {
                     final item = realtimeArrival.realtimeArrivalList![index];

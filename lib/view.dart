@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:metro/model.dart';
 import 'controller.dart';
 import 'sqlite.dart';
 
@@ -34,40 +35,50 @@ class _View1State extends ConsumerState<View1> {
     final realtimeArrivalAsyncValue =
         ref.watch(realtimeArrivalNotifierProvider);
 
+    final realtimeArrivalAsyncRead =
+        ref.read(realtimeArrivalNotifierProvider.notifier);
+
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
         title: const Text('실시간 도착 알리미 '),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
           children: [
-            Text(searches?.join(', ') ?? 'Loading...'),
-            TextField(
-              decoration: const InputDecoration(
-                hintText: '지하철명',
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Column(
+                children: [
+                  Text(searches?.join(', ') ?? 'Loading...'),
+                  TextField(
+                    decoration: const InputDecoration(
+                      hintText: '지하철명',
+                    ),
+                    onSubmitted: (value) async {
+                      searchText = value;
+                      ref
+                          .read(realtimeArrivalNotifierProvider.notifier)
+                          .fetchData(value);
+                      await dbHelper.insertSearch(value);
+                      searches = await dbHelper.getSearches();
+                      setState(() {});
+                    },
+                  ),
+                  const SizedBox(height: 30),
+                  ElevatedButton(
+                    onPressed: () {
+                      ref
+                          .read(realtimeArrivalNotifierProvider.notifier)
+                          .timeStartStop(searchText);
+                    },
+                    child: const Icon(Icons.timer_rounded),
+                  ),
+                  const SizedBox(height: 30),
+                ],
               ),
-              onSubmitted: (value) async {
-                searchText = value;
-                ref
-                    .read(realtimeArrivalNotifierProvider.notifier)
-                    .fetchData(value);
-                await dbHelper.insertSearch(value);
-                searches = await dbHelper.getSearches();
-                setState(() {});
-              },
             ),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () {
-                ref
-                    .read(realtimeArrivalNotifierProvider.notifier)
-                    .timeStartStop(searchText);
-              },
-              child: const Icon(Icons.timer_rounded),
-            ),
-            const SizedBox(height: 30),
             Expanded(
               child: realtimeArrivalAsyncValue.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
@@ -76,14 +87,23 @@ class _View1State extends ConsumerState<View1> {
                   itemCount: realtimeArrival.realtimeArrivalList?.length ?? 0,
                   itemBuilder: (context, index) {
                     final item = realtimeArrival.realtimeArrivalList![index];
-                    return GestureDetector(
+                    return InkWell(
                       onTap: () {
-                        ///해당 차량 클릭 시 강조!
-                        print(item.toJson().toString());
+                        realtimeArrivalAsyncRead.setBtrainNo(realtimeArrival
+                            .realtimeArrivalList![index].btrainNo
+                            .toString());
+                        setState(() {});
                       },
-                      child: ListTile(
-                        title: Text(item.trainLineNm.toString()),
-                        subtitle: Text(item.arvlMsg2.toString()),
+                      child: Container(
+                        color: item.btrainNo.toString() ==
+                                realtimeArrivalAsyncRead.selectedBtrainNo
+                            ? Colors.amber
+                            : Colors.white,
+                        child: ListTile(
+                          title: Text(item.trainLineNm.toString()),
+                          subtitle: Text(
+                              '${item.arvlMsg2.toString()} /${(int.parse(item.barvlDt.toString()) / 60).toString().split('.')[0]}분'),
+                        ),
                       ),
                     );
                   },

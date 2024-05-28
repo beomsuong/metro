@@ -171,3 +171,24 @@ class RealtimeArrivalList {
     return data;
   }
 }
+
+String description(String code) {
+  switch (code) {
+    case '0':
+      return "진입";
+    case '1':
+      return "도착";
+    case '2':
+      return "출발";
+    case '3':
+      return "전역출발";
+    case '4':
+      return "전역진입";
+    case '5':
+      return "전역도착";
+    case '99':
+      return "운행중";
+    default:
+      return "알 수 없음";
+  }
+}

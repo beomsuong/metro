@@ -28,7 +28,7 @@ class DBHelper {
         await db.execute('''
           CREATE TABLE searches(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            subwayName TEXT,
+            subwayName TEXT UNIQUE,
             searchTime TEXT
           )
         ''');
@@ -36,20 +36,40 @@ class DBHelper {
     );
   }
 
-  ///검색 기록 추가
+  /// 검색 기록 추가 또는 갱신
   Future<int> insertSearch(String subwayName) async {
     final db = await database;
-    return await db.insert(
+    // 먼저 subwayName이 존재하는지 확인
+    final result = await db.query(
       'searches',
-      {
-        'subwayName': subwayName,
-        'searchTime': DateFormat('HH:mm').format(DateTime.now())
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
+      where: 'subwayName = ?',
+      whereArgs: [subwayName],
     );
+
+    if (result.isNotEmpty) {
+      // 존재하면 searchTime을 갱신
+      return await db.update(
+        'searches',
+        {
+          'searchTime': DateFormat('HH:mm').format(DateTime.now()),
+        },
+        where: 'subwayName = ?',
+        whereArgs: [subwayName],
+      );
+    } else {
+      // 존재하지 않으면 새 기록 추가
+      return await db.insert(
+        'searches',
+        {
+          'subwayName': subwayName,
+          'searchTime': DateFormat('HH:mm').format(DateTime.now()),
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
   }
 
-  ///목록 가져오기
+  /// 목록 가져오기
   Future<List<String>> getSearches() async {
     final db = await database;
     final result = await db.rawQuery('''
@@ -61,7 +81,7 @@ class DBHelper {
     return result.map((row) => row['subwayName'] as String).toList();
   }
 
-  ///가장 최신꺼 역 이름만 가져오기
+  /// 가장 최신꺼 역 이름만 가져오기
   Future<String?> getClosestSearch() async {
     final db = await database;
     final result = await db.rawQuery('''
@@ -78,23 +98,25 @@ class DBHelper {
     }
   }
 
-  Future<int> updateSearch(int id, String newSubwayName) async {
+  Future<int> updateSearch(String newSubwayName) async {
     final db = await database;
     return await db.update(
       'searches',
       {
         'subwayName': newSubwayName,
-        'searchTime': DateTime.now().toIso8601String(),
+        'searchTime': DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now()),
       },
-      where: 'id = ?',
-      whereArgs: [id],
+      where: 'subwayName = ?',
+      whereArgs: [newSubwayName],
     );
   }
 
-  Future<int> deleteSearch() async {
+  Future deleteSearch(String subwayName) async {
     final db = await database;
     return await db.delete(
       'searches',
+      where: 'subwayName = ?',
+      whereArgs: [subwayName],
     );
   }
 }

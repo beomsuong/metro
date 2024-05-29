@@ -26,6 +26,7 @@ class _View1State extends ConsumerState<View1> {
         ref.read(realtimeArrivalNotifierProvider.notifier).timeStartStop(data);
       }
       searches = await dbHelper.getSearches();
+
       setState(() {});
     });
   }
@@ -51,7 +52,46 @@ class _View1State extends ConsumerState<View1> {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Column(
                 children: [
-                  Text(searches?.join(', ') ?? 'Loading...'),
+                  Wrap(
+                    children: [
+                      for (var search in searches ?? [])
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Container(
+                            height: 40,
+                            width: 60,
+                            decoration: BoxDecoration(
+                              color: const Color.fromARGB(255, 86, 169, 205),
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
+                            child: InkWell(
+                              onTap: () async {
+                                await dbHelper.updateSearch(search);
+                                searches = await dbHelper.getSearches();
+                                setState(() {});
+                              },
+                              onLongPress: () async {
+                                await dbHelper.deleteSearch(search);
+                                searches = await dbHelper.getSearches();
+                                setState(() {});
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(0),
+                                child: Center(
+                                  child: FittedBox(
+                                    child: Text(
+                                      search,
+                                      style:
+                                          const TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                    ],
+                  ),
                   TextField(
                     decoration: const InputDecoration(
                       hintText: '지하철명',
@@ -82,7 +122,7 @@ class _View1State extends ConsumerState<View1> {
             Expanded(
               child: realtimeArrivalAsyncValue.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(child: Text('Error: $err')),
+                error: (err, stack) => const Center(child: Text('데이터 조회 실패')),
                 data: (realtimeArrival) => ListView.builder(
                   itemCount: realtimeArrival.realtimeArrivalList?.length ?? 0,
                   itemBuilder: (context, index) {

@@ -8,7 +8,13 @@
 
 [서울시 지하철 실시간 도착정보 API](https://data.seoul.go.kr/dataList/OA-12764/A/1/datasetView.do;jsessionid=FA0F66EAFDFDEAFDFF22291F5F9090F7.new_portal-svr-11)
 
-# riverpod 필요 세팅
+## 사용 패키지
+
+- 상태관리자 : [riverpod](https://pub.dev/packages/flutter_riverpod)
+- localDB : [SQLite](https://pub.dev/packages/sqflite)
+- HTTP : [dio](https://pub.dev/packages/dio)
+
+### riverpod 필요 세팅
 
 - flutter pub add flutter_riverpod
 - flutter pub add dev:riverpod_generator

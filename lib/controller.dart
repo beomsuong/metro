@@ -37,6 +37,7 @@ class RealtimeArrivalNotifier extends _$RealtimeArrivalNotifier {
     try {
       state = const AsyncValue.loading();
       final arrivals = await apiService.fetchRealtimeArrival(stationName);
+
       arrivals.realtimeArrivalList!.sort((a, b) {
         if (selectedBtrainNo != null) {
           if (a.btrainNo == selectedBtrainNo) return -1;

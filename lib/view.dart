@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:metro/model.dart';
@@ -66,6 +68,7 @@ class _View1State extends ConsumerState<View1> {
                             ),
                             child: InkWell(
                               onTap: () async {
+                                realtimeArrivalAsyncRead.fetchData(search);
                                 await dbHelper.updateSearch(search);
                                 searches = await dbHelper.getSearches();
                                 setState(() {});
@@ -98,22 +101,22 @@ class _View1State extends ConsumerState<View1> {
                     ),
                     onSubmitted: (value) async {
                       searchText = value;
-                      ref
-                          .read(realtimeArrivalNotifierProvider.notifier)
-                          .fetchData(value);
+                      realtimeArrivalAsyncRead.fetchData(value);
                       await dbHelper.insertSearch(value);
                       searches = await dbHelper.getSearches();
                       setState(() {});
                     },
                   ),
                   const SizedBox(height: 30),
-                  ElevatedButton(
-                    onPressed: () {
-                      ref
-                          .read(realtimeArrivalNotifierProvider.notifier)
-                          .timeStartStop(searchText);
+                  GestureDetector(
+                    onTap: () {
+                      realtimeArrivalAsyncRead.timeStartStop(searchText);
                     },
-                    child: const Icon(Icons.timer_rounded),
+                    child: CustomPaint(
+                      size: const Size(100, 100),
+                      painter: CircularTimerPainter(
+                          progress: realtimeArrivalAsyncRead.progress),
+                    ),
                   ),
                   const SizedBox(height: 30),
                 ],
@@ -123,16 +126,15 @@ class _View1State extends ConsumerState<View1> {
               child: realtimeArrivalAsyncValue.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (err, stack) => const Center(child: Text('데이터 조회 실패')),
-                data: (realtimeArrival) => ListView.builder(
-                  itemCount: realtimeArrival.realtimeArrivalList?.length ?? 0,
+                data: (data) => ListView.builder(
+                  itemCount: data.realtimeArrivalList?.length ?? 0,
                   itemBuilder: (context, index) {
-                    final item = realtimeArrival.realtimeArrivalList![index];
+                    final item = data.realtimeArrivalList![index];
                     return InkWell(
                       onTap: () {
-                        realtimeArrivalAsyncRead.setBtrainNo(realtimeArrival
+                        realtimeArrivalAsyncRead.setBtrainNo(data
                             .realtimeArrivalList![index].btrainNo
                             .toString());
-                        setState(() {});
                       },
                       child: Container(
                         color: item.btrainNo.toString() ==
@@ -154,5 +156,33 @@ class _View1State extends ConsumerState<View1> {
         ),
       ),
     );
+  }
+}
+
+class CircularTimerPainter extends CustomPainter {
+  CircularTimerPainter({required this.progress});
+  final double progress;
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint backgroundPaint = Paint()
+      ..color = Colors.grey
+      ..strokeWidth = 10
+      ..style = PaintingStyle.stroke;
+    final Paint fillPaint = Paint()
+      ..color = Colors.blue
+      ..strokeWidth = 10
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    final double radius = min(size.width / 2, size.height / 2) - 10;
+    canvas.drawCircle(size.center(Offset.zero), radius, backgroundPaint);
+    final double angle = 2 * pi * progress;
+    final Rect rect =
+        Rect.fromCircle(center: size.center(Offset.zero), radius: radius);
+    canvas.drawArc(rect, -pi / 2, angle, false, fillPaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return true;
   }
 }

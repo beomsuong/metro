@@ -8,6 +8,8 @@
 
 [서울시 지하철 실시간 도착정보 API](https://data.seoul.go.kr/dataList/OA-12764/A/1/datasetView.do;jsessionid=FA0F66EAFDFDEAFDFF22291F5F9090F7.new_portal-svr-11)
 
+[블로그포스팅](https://beomsuong.tistory.com/32)
+
 ## 사용 패키지
 
 - 상태관리자 : [riverpod](https://pub.dev/packages/flutter_riverpod)
